@@ -14,7 +14,7 @@ Thank you for your interest in contributing to **OpenTiming**! As a 100% free an
 
 1. **Fork and Clone**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/open-timing.git
+   git clone https://github.com/dariocast/open-timing.git
    cd open-timing
    ```
 

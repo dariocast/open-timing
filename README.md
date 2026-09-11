@@ -1,21 +1,21 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/feathericons/feather/master/icons/clock.svg" width="80" height="80" alt="OpenTiming Logo" />
+  <img src="https://raw.githubusercontent.com/feathericons/feather/master/icons/clock.svg" width="64" height="64" alt="OpenTiming Logo" />
 </p>
 
 <h1 align="center">OpenTiming</h1>
 
 <p align="center">
-  <strong>A modern, battery-efficient, 100% offline-first automatic time & activity tracker for macOS.</strong><br>
-  <em>Directly inspired by <a href="https://timingapp.com/">Timing App</a>, built with Swift & SwiftUI. Free and Open Source (FOSS).</em>
+  <strong>A lightweight, battery-efficient, 100% offline-first automatic time & activity tracker for macOS.</strong><br>
+  <em>Directly inspired by <a href="https://timingapp.com/">Timing App</a>, built natively with Swift & SwiftUI. Free and Open Source (FOSS).</em>
 </p>
 
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-black.svg" alt="License: MIT"></a>
   <img src="https://img.shields.io/badge/macOS-14.0%2B-black?logo=apple" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Swift-5.9%2B-orange?logo=swift" alt="Swift 5.9+">
-  <img src="https://img.shields.io/badge/Privacy-100%25%20Offline-brightgreen" alt="100% Offline">
-  <a href="https://github.com/dariocastellano/open-timing/actions"><img src="https://img.shields.io/badge/CI-Passing-brightgreen" alt="CI Status"></a>
-  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-blueviolet.svg" alt="PRs Welcome"></a>
+  <img src="https://img.shields.io/badge/Privacy-100%25%20Offline-2e7d32" alt="100% Offline">
+  <a href="https://github.com/dariocast/open-timing/actions"><img src="https://img.shields.io/badge/CI-Passing-2e7d32" alt="CI Status"></a>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-5c6bc0.svg" alt="PRs Welcome"></a>
 </p>
 
 ---
@@ -24,7 +24,7 @@
 
 Proprietary automatic time trackers (like Timing App or RescueTime) are great tools, but they often require recurring subscriptions or upload private browsing/window logs to remote cloud servers.
 
-**OpenTiming** is designed to give you the exact same automatic tracking power, but **100% locally on your machine**:
+**OpenTiming** gives you the exact same automatic tracking power, but **100% locally on your machine**:
 - 🔒 **Zero Telemetry / Zero Cloud**: Everything stays in your local SQLite database (`~/Library/Application Support/OpenTiming/opetiming.sqlite`). No internet connection is ever needed or used.
 - ⚡ **Lightweight & Battery-Friendly**: Built natively in Swift with minimal background overhead.
 - 🆓 **100% Free & Open Source**: MIT Licensed. No paywalls, no trial limits, no subscriptions.
@@ -118,7 +118,7 @@ open-timing/
 
 ### Option 1: Run via Command Line (Debug)
 ```bash
-git clone https://github.com/dariocastellano/open-timing.git
+git clone https://github.com/dariocast/open-timing.git
 cd open-timing
 swift run OpenTiming
 ```
