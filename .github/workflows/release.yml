@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    name: Build and Release .app
+    runs-on: macos-14
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Build Release Bundle
+        run: ./scripts/build_app.sh
+
+      - name: Package Zip
+        run: |
+          cd build
+          zip -r OpenTiming-macOS.zip OpenTiming.app
+          cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/OpenTiming-macOS.zip
+          draft: false
+          prerelease: false
+          generate_release_notes: true

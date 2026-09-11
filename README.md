@@ -1,90 +1,165 @@
-# OpenTiming ⏱️
+<p align="center">
+  <img src="https://raw.githubusercontent.com/feathericons/feather/master/icons/clock.svg" width="80" height="80" alt="OpenTiming Logo" />
+</p>
 
-**OpenTiming** è un'applicazione nativa per macOS ispirata a [Timing App](https://timingapp.com/), progettata per essere **100% offline-first**, rispettosa della privacy e a bassissimo consumo energetico.
+<h1 align="center">OpenTiming</h1>
 
-Traccia automaticamente il tempo trascorso sulle diverse applicazioni, documenti e schede del browser, categorizzando le attività tramite regole intelligenti e visualizzando statistiche e timeline dettagliate.
+<p align="center">
+  <strong>A modern, battery-efficient, 100% offline-first automatic time & activity tracker for macOS.</strong><br>
+  <em>Directly inspired by <a href="https://timingapp.com/">Timing App</a>, built with Swift & SwiftUI. Free and Open Source (FOSS).</em>
+</p>
 
----
-
-## ✨ Funzionalità dell'MVP
-
-- 🔒 **100% Offline & Privata**: Tutti i dati risiedono esclusivamente in un database SQLite locale (`~/Library/Application Support/OpenTiming/opetiming.sqlite`). Nessuna telemetria, nessun cloud, zero connessioni di rete.
-- ⚡ **Background Tracking Intelligente**:
-  - Rilevamento in tempo reale dell'app in primo piano (`NSWorkspace`).
-  - Ispezione del titolo della finestra attiva e del documento tramite **macOS Accessibility API (`AXUIElement`)**.
-  - Estrazione automatica dei domini/URL per i principali browser macOS (**Safari, Google Chrome, Arc, Brave, Microsoft Edge**).
-  - Rilevamento automatico dell'inattività (**Idle Detection**) per escludere i momenti di pausa dal calcolo della produttività.
-  - Aggregazione e coalescing delle sessioni continue per evitare il bloat del database.
-- 📊 **Dashboard & Timeline Interattiva**:
-  - **Overview**: Punteggio di produttività, ore totali, tempo produttivo/distraente/neutro, grafici a barre orari per l'intera giornata, top app e categorie.
-  - **Timeline 24h**: Ribbon visivo continuo a blocchi colorati per visualizzare la cronologia della giornata con ricerca testuale istantanea e possibilità di riclassificare manualmente ogni evento.
-  - **Progetti & Categorie**: Gestione personalizzata di categorie (colori, icone, punteggio produttività da -2 a +2) e progetti (tariffa oraria, categoria associata).
-  - **Regole di Categorizzazione**: Motore di regole prioritarie (Regex, Contiene, Equals, Prefisso) su App, Bundle ID, Titolo Finestra o Dominio Web, con supporto per riapplicare le regole a tutto lo storico passato.
-- 🗂️ **Export Dati**: Esportazione immediata dell'intero storico o di intervalli in formato **CSV** (per Excel / Numbers / Fogli Google) o **JSON**.
-- 🖥️ **Menu Bar Extra**: Contatore live, app corrente in uso, stato tracciamento/pausa/idle e scorciatoia per aprire la Dashboard.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/macOS-14.0%2B-black?logo=apple" alt="macOS 14+">
+  <img src="https://img.shields.io/badge/Swift-5.9%2B-orange?logo=swift" alt="Swift 5.9+">
+  <img src="https://img.shields.io/badge/Privacy-100%25%20Offline-brightgreen" alt="100% Offline">
+  <a href="https://github.com/dariocastellano/open-timing/actions"><img src="https://img.shields.io/badge/CI-Passing-brightgreen" alt="CI Status"></a>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-blueviolet.svg" alt="PRs Welcome"></a>
+</p>
 
 ---
 
-## 🏗️ Architettura del Progetto
+## 💡 Why OpenTiming?
+
+Proprietary automatic time trackers (like Timing App or RescueTime) are great tools, but they often require recurring subscriptions or upload private browsing/window logs to remote cloud servers.
+
+**OpenTiming** is designed to give you the exact same automatic tracking power, but **100% locally on your machine**:
+- 🔒 **Zero Telemetry / Zero Cloud**: Everything stays in your local SQLite database (`~/Library/Application Support/OpenTiming/opetiming.sqlite`). No internet connection is ever needed or used.
+- ⚡ **Lightweight & Battery-Friendly**: Built natively in Swift with minimal background overhead.
+- 🆓 **100% Free & Open Source**: MIT Licensed. No paywalls, no trial limits, no subscriptions.
+
+---
+
+## ✨ Features
+
+- ⏱️ **Automatic Background Tracking**:
+  - Detects active frontmost applications in real-time (`NSWorkspace`).
+  - Inspects active window titles and open documents via **macOS Accessibility API (`AXUIElement`)**.
+  - Extracts active browser tab URLs & domains (**Safari, Google Chrome, Arc, Brave, Microsoft Edge**).
+  - Smart **Idle Detection** (`CGEventSource`): automatically detects when you step away from the keyboard/mouse and marks time as idle.
+  - Smart **Session Coalescing**: prevents database bloat by continuously extending ongoing activity segments.
+
+- 📊 **Interactive Dashboard**:
+  - **Overview**: Real-time productivity score (%), total tracked hours, productive vs. distracting breakdown, Swift Charts 24h hourly distribution, top applications & categories.
+  - **24-Hour Timeline Ribbon**: Visual continuous block chart of your day. Scrub, search, and retroactively reassign categories/projects on any recorded activity.
+  - **Projects & Categories**: Create and organize custom categories (colors, icons, productivity ratings from -2 to +2) and projects (hourly rates, client tracking).
+  - **Rule Engine**: Create powerful matching rules (*Contains, Exact, StartsWith, EndsWith, Regex*) on App Name, Bundle ID, Window Title, or Web Domain.
+  - **Retroactive Rule Application**: Re-categorize your entire historical database with a single click after creating new rules.
+
+- 📥 **Data Portability & Export**:
+  - Export your entire tracking history or custom ranges to **CSV** (for Excel, Apple Numbers, Google Sheets) or **JSON**.
+  - Full control to clear or backup your local database.
+
+- 🖥️ **Menu Bar Companion**:
+  - Live timer in the top macOS Menu Bar.
+  - Quick glance at the current running app, today's productivity score, pause/resume tracking, and instant dashboard access.
+
+---
+
+## 📊 Comparison
+
+| Feature | OpenTiming (FOSS) | Timing App | RescueTime |
+| :--- | :---: | :---: | :---: |
+| **Pricing** | **Free & Open Source** | ~$10 - $16 / mo | ~$12 / mo |
+| **Storage Architecture** | **100% Local SQLite** | Cloud / Local Sync | Cloud Only |
+| **Privacy & Telemetry** | **Zero Telemetry / No Network** | Cloud Sync | Cloud Hosted |
+| **Window Title & URL Tracking** | ✅ Yes (Native AX API) | ✅ Yes | ✅ Yes |
+| **Idle Inactivity Detection** | ✅ Yes | ✅ Yes | ✅ Yes |
+| **Categorization Rules & Regex** | ✅ Yes | ✅ Yes | Limited |
+| **Data Export (CSV / JSON)** | ✅ Yes (Local) | ✅ Yes | ✅ Yes |
+| **Menu Bar Companion** | ✅ Yes | ✅ Yes | ✅ Yes |
+
+---
+
+## 🛠️ Architecture
 
 ```
 open-timing/
-├── Package.swift                     # Definizione SPM (Swift 5.9+, macOS 14.0+)
-├── Info.plist                        # Metadati dell'app e descrizioni permessi Apple Events
+├── Package.swift                     # Swift Package Manager manifest (macOS 14+)
+├── Info.plist                        # App bundle metadata and permissions description
 ├── scripts/
-│   └── build_app.sh                  # Script per compilare e creare il bundle OpenTiming.app
+│   └── build_app.sh                  # Release compilation and OpenTiming.app bundler
 ├── Sources/OpenTiming/
-│   ├── OpenTimingApp.swift           # Entry point SwiftUI + MenuBarExtra + WindowGroup
+│   ├── OpenTimingApp.swift           # Application entry point (SwiftUI Window + MenuBarExtra)
 │   ├── Models/
-│   │   ├── ActivityRecord.swift      # Modelli evento, statistiche e breakdown
-│   │   ├── Category.swift            # Modelli Categorie e Progetti
-│   │   └── Rule.swift                # Modello regole di categorizzazione
+│   │   ├── ActivityRecord.swift      # Activity snapshots, metrics & aggregation models
+│   │   ├── Category.swift            # Category & Project data structures
+│   │   └── Rule.swift                # Categorization rule definitions & matchers
 │   ├── Database/
-│   │   └── DatabaseManager.swift     # Motore SQLite (WAL mode, indici, aggregazioni, export)
+│   │   └── DatabaseManager.swift     # SQLite engine (WAL mode, indexing, aggregate queries)
 │   ├── Tracker/
-│   │   ├── ActivityTracker.swift     # Engine di tracciamento e gestione sessioni
-│   │   ├── WindowInspector.swift     # Accessibility API & estrazione URL/titoli finestra
-│   │   └── IdleDetector.swift        # Rilevamento inattività con CGEventSource
+│   │   ├── ActivityTracker.swift     # Background tracking coordinator & session coalesce
+│   │   ├── WindowInspector.swift     # AXUIElement window inspection & browser URL extractors
+│   │   └── IdleDetector.swift        # CGEventSource user inactivity detection
 │   ├── Rules/
-│   │   └── RuleEngine.swift          # Valutazione regole di matching
+│   │   └── RuleEngine.swift          # Priority matching engine
 │   └── Views/
-│       ├── AppState.swift            # State management Observable per l'UI
-│       ├── MainDashboardView.swift   # Sidebar navigation (Dashboard, Timeline, etc.)
-│       ├── DashboardOverviewView.swift# Grafici Swift Charts e metriche
-│       ├── TimelineView.swift        # Visual timeline ribbon e log eventi
-│       ├── CategoriesProjectsView.swift # Gestione categorie e progetti
-│       ├── RulesView.swift           # Gestione regole e riapplicazione storico
-│       ├── SettingsView.swift        # Preferenze, idle timeout, permessi ed export
-│       ├── MenuBarView.swift         # Popup compatto della Menu Bar
-│       └── Helpers.swift             # Helper colori esadecimali, icone e formattazione
+│       ├── AppState.swift            # MainActor Observable ViewModel
+│       ├── MainDashboardView.swift   # Sidebar navigation container
+│       ├── DashboardOverviewView.swift# Swift Charts graphs & productivity score cards
+│       ├── TimelineView.swift        # 24h visual timeline ribbon & activity table
+│       ├── CategoriesProjectsView.swift # Category & project management modals
+│       ├── RulesView.swift           # Rule editor & retroactive tagging
+│       ├── SettingsView.swift        # Permissions guide, idle sliders & CSV/JSON export
+│       ├── MenuBarView.swift         # Menu bar popup widget
+│       └── Helpers.swift             # App icons, colors, time formatters
 └── Tests/OpenTimingTests/
-    └── OpenTimingTests.swift         # Test unitari per DB, regole, stats ed export
+    └── OpenTimingTests.swift         # Unit tests (Database, Rules, Stats, CSV Export)
 ```
 
 ---
 
-## 🚀 Come Eseguire e Compilare
+## 🚀 Getting Started
 
-### 1. Esecuzione Rapida da Terminale (Debug)
+### Requirements
+- macOS 14.0 (Sonoma) or macOS 15.0+ (Sequoia)
+- Apple Silicon (M1/M2/M3/M4) or Intel Mac
+
+### Option 1: Run via Command Line (Debug)
 ```bash
+git clone https://github.com/dariocastellano/open-timing.git
+cd open-timing
 swift run OpenTiming
 ```
 
-### 2. Creazione dell'App Bundle `.app` per macOS (Release)
+### Option 2: Build Native macOS App Bundle (`OpenTiming.app`)
 ```bash
 ./scripts/build_app.sh
 open ./build/OpenTiming.app
 ```
 
-### 3. Esecuzione dei Test Unitari
+### Option 3: Open in Xcode
 ```bash
-swift test
+open Package.swift
 ```
 
 ---
 
-## 🔑 Permessi macOS Richiesti
+## 🔑 Permissions Setup
 
-Per leggere il titolo delle finestre delle altre applicazioni e gli URL del browser:
-1. All'avvio, OpenTiming mostrerà un avviso se il permesso di **Accessibilità** non è ancora attivo.
-2. Clicca su **"Grant Access"** o vai in **Impostazioni di Sistema > Privacy e Sicurezza > Accessibilità** e abilita **OpenTiming** (o il Terminale da cui lo stai eseguendo in debug).
+To read window titles and browser tabs:
+1. When you first launch OpenTiming, it will prompt you if Accessibility permissions are needed.
+2. Open **System Settings > Privacy & Security > Accessibility** and ensure **OpenTiming** (or your Terminal if running via `swift run`) is enabled.
+
+---
+
+## 🧪 Running Unit Tests
+
+```bash
+swift test
+```
+
+All core components (database CRUD, index queries, regex rule engines, idle filters, and CSV exporters) are covered by automated unit tests.
+
+---
+
+## 🤝 Contributing
+
+Contributions are very welcome! Whether it's adding presets for more apps, refining UI/UX, or improving performance, please check out [CONTRIBUTING.md](CONTRIBUTING.md) to get started.
+
+---
+
+## 📜 License
+
+OpenTiming is open-sourced software licensed under the [MIT License](LICENSE).
