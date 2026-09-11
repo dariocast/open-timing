@@ -1,12 +1,29 @@
 import SwiftUI
 
+public enum CategoryProjectSheet: Identifiable {
+    case addCategory
+    case editCategory(ActivityCategory)
+    case addProject
+    case editProject(Project)
+    
+    public var id: String {
+        switch self {
+        case .addCategory:
+            return "add_cat"
+        case .editCategory(let cat):
+            return "edit_cat_\(cat.id)"
+        case .addProject:
+            return "add_proj"
+        case .editProject(let proj):
+            return "edit_proj_\(proj.id)"
+        }
+    }
+}
+
 public struct CategoriesProjectsView: View {
     @ObservedObject var appState: AppState
     @State private var selectedTab: Int = 0
-    @State private var showingAddCategorySheet = false
-    @State private var showingAddProjectSheet = false
-    @State private var categoryToEdit: ActivityCategory?
-    @State private var projectToEdit: Project?
+    @State private var activeSheet: CategoryProjectSheet?
     
     public var body: some View {
         VStack(spacing: 0) {
@@ -22,12 +39,12 @@ public struct CategoriesProjectsView: View {
                 Spacer()
                 
                 if selectedTab == 0 {
-                    Button(action: { showingAddCategorySheet = true }) {
+                    Button(action: { activeSheet = .addCategory }) {
                         Label("Add Category", systemImage: "plus")
                     }
                     .buttonStyle(.borderedProminent)
                 } else {
-                    Button(action: { showingAddProjectSheet = true }) {
+                    Button(action: { activeSheet = .addProject }) {
                         Label("Add Project", systemImage: "plus")
                     }
                     .buttonStyle(.borderedProminent)
@@ -46,9 +63,10 @@ public struct CategoriesProjectsView: View {
                             ZStack {
                                 Circle()
                                     .fill(Color(hex: category.colorHex).opacity(0.2))
-                                    .frame(width: 32, height: 32)
+                                    .frame(width: 34, height: 34)
                                 Image(systemName: category.iconName)
                                     .foregroundColor(Color(hex: category.colorHex))
+                                    .font(.system(size: 15, weight: .semibold))
                             }
                             
                             VStack(alignment: .leading, spacing: 2) {
@@ -62,7 +80,7 @@ public struct CategoriesProjectsView: View {
                             Spacer()
                             
                             Button("Edit") {
-                                categoryToEdit = category
+                                activeSheet = .editCategory(category)
                             }
                             .buttonStyle(.bordered)
                             
@@ -91,7 +109,7 @@ public struct CategoriesProjectsView: View {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                         Button("Create First Project") {
-                            showingAddProjectSheet = true
+                            activeSheet = .addProject
                         }
                         .buttonStyle(.borderedProminent)
                         Spacer()
@@ -103,9 +121,10 @@ public struct CategoriesProjectsView: View {
                                 ZStack {
                                     Circle()
                                         .fill(Color(hex: project.colorHex).opacity(0.2))
-                                        .frame(width: 32, height: 32)
+                                        .frame(width: 34, height: 34)
                                     Image(systemName: project.iconName)
                                         .foregroundColor(Color(hex: project.colorHex))
+                                        .font(.system(size: 15, weight: .semibold))
                                 }
                                 
                                 VStack(alignment: .leading, spacing: 2) {
@@ -122,7 +141,7 @@ public struct CategoriesProjectsView: View {
                                 Spacer()
                                 
                                 Button("Edit") {
-                                    projectToEdit = project
+                                    activeSheet = .editProject(project)
                                 }
                                 .buttonStyle(.bordered)
                                 
@@ -140,24 +159,24 @@ public struct CategoriesProjectsView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingAddCategorySheet) {
-            CategoryEditSheet(category: nil) { newCat in
-                appState.saveCategory(newCat)
-            }
-        }
-        .sheet(item: $categoryToEdit) { cat in
-            CategoryEditSheet(category: cat) { updatedCat in
-                appState.saveCategory(updatedCat)
-            }
-        }
-        .sheet(isPresented: $showingAddProjectSheet) {
-            ProjectEditSheet(project: nil, categories: appState.categories) { newProj in
-                appState.saveProject(newProj)
-            }
-        }
-        .sheet(item: $projectToEdit) { proj in
-            ProjectEditSheet(project: proj, categories: appState.categories) { updatedProj in
-                appState.saveProject(updatedProj)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .addCategory:
+                CategoryEditSheet(category: nil) { newCat in
+                    appState.saveCategory(newCat)
+                }
+            case .editCategory(let cat):
+                CategoryEditSheet(category: cat) { updatedCat in
+                    appState.saveCategory(updatedCat)
+                }
+            case .addProject:
+                ProjectEditSheet(project: nil, categories: appState.categories) { newProj in
+                    appState.saveProject(newProj)
+                }
+            case .editProject(let proj):
+                ProjectEditSheet(project: proj, categories: appState.categories) { updatedProj in
+                    appState.saveProject(updatedProj)
+                }
             }
         }
     }
@@ -177,88 +196,193 @@ struct CategoryEditSheet: View {
     @State private var colorHex: String
     @State private var iconName: String
     @State private var productivityScore: Int
+    @State private var selectedColor: Color
+    
     let editingId: UUID?
     let onSave: (ActivityCategory) -> Void
     
-    let icons = ["chevron.left.forwardslash.chevron.right", "paintpalette.fill", "doc.text.fill", "bubble.left.and.bubble.right.fill", "gearshape.fill", "tv.fill", "briefcase.fill", "chart.xyaxis.line", "gamecontroller.fill", "cart.fill"]
-    let colors = ["#0A84FF", "#BF5AF2", "#5E5CE6", "#30D158", "#FF9F0A", "#FF453A", "#64D2FF", "#FF375F", "#8E8E93"]
+    let presetIcons = [
+        "chevron.left.forwardslash.chevron.right",
+        "paintpalette.fill",
+        "doc.text.fill",
+        "bubble.left.and.bubble.right.fill",
+        "gearshape.fill",
+        "tv.fill",
+        "briefcase.fill",
+        "chart.xyaxis.line",
+        "gamecontroller.fill",
+        "cart.fill",
+        "book.fill",
+        "music.note",
+        "globe",
+        "envelope.fill",
+        "hammer.fill",
+        "folder.fill"
+    ]
+    
+    let presetColors = [
+        "#0A84FF", // Blue
+        "#BF5AF2", // Purple
+        "#5E5CE6", // Indigo
+        "#30D158", // Green
+        "#FF9F0A", // Orange
+        "#FF453A", // Red
+        "#64D2FF", // Cyan
+        "#FF375F", // Pink
+        "#8E8E93", // Gray
+        "#FFD60A"  // Yellow
+    ]
     
     init(category: ActivityCategory?, onSave: @escaping (ActivityCategory) -> Void) {
         self.editingId = category?.id
+        let initialHex = category?.colorHex ?? "#0A84FF"
         _name = State(initialValue: category?.name ?? "")
-        _colorHex = State(initialValue: category?.colorHex ?? "#0A84FF")
+        _colorHex = State(initialValue: initialHex)
         _iconName = State(initialValue: category?.iconName ?? "folder.fill")
         _productivityScore = State(initialValue: category?.productivityScore ?? 0)
+        _selectedColor = State(initialValue: Color(hex: initialHex))
         self.onSave = onSave
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(editingId == nil ? "New Category" : "Edit Category")
-                .font(.headline)
-            
-            TextField("Category Name", text: $name)
-                .textFieldStyle(.roundedBorder)
-            
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Productivity Level")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Picker("", selection: $productivityScore) {
-                    Text("Very Productive (+2)").tag(2)
-                    Text("Productive (+1)").tag(1)
-                    Text("Neutral (0)").tag(0)
-                    Text("Distracting (-1)").tag(-1)
-                    Text("Very Distracting (-2)").tag(-2)
+        VStack(alignment: .leading, spacing: 18) {
+            // Header with Preview
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: colorHex).opacity(0.2))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: iconName)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Color(hex: colorHex))
                 }
-                .pickerStyle(.segmented)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(editingId == nil ? "New Category" : "Edit Category")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                    Text(name.isEmpty ? "Category Name Preview" : name)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+            }
+            .padding(.bottom, 4)
+            
+            Divider()
+            
+            // Name Field
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Category Name")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                TextField("e.g. Software Development", text: $name)
+                    .textFieldStyle(.roundedBorder)
             }
             
+            // Productivity Level
             VStack(alignment: .leading, spacing: 6) {
-                Text("Color")
+                Text("Productivity Score")
                     .font(.caption)
+                    .fontWeight(.semibold)
                     .foregroundColor(.secondary)
+                
+                Picker("", selection: $productivityScore) {
+                    Label("Very Productive (+2)", systemImage: "sparkles").tag(2)
+                    Label("Productive (+1)", systemImage: "arrow.up.circle.fill").tag(1)
+                    Label("Neutral (0)", systemImage: "minus.circle.fill").tag(0)
+                    Label("Distracting (-1)", systemImage: "arrow.down.circle.fill").tag(-1)
+                    Label("Very Distracting (-2)", systemImage: "flame.fill").tag(-2)
+                }
+                .pickerStyle(.menu)
+            }
+            
+            // Color Palette & ColorPicker
+            VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    ForEach(colors, id: \.self) { hex in
-                        Circle()
-                            .fill(Color(hex: hex))
-                            .frame(width: 24, height: 24)
-                            .overlay(
+                    Text("Color")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    ColorPicker("Custom", selection: $selectedColor, supportsOpacity: false)
+                        .labelsHidden()
+                        .onChange(of: selectedColor) { _, newColor in
+                            colorHex = newColor.toHex()
+                        }
+                }
+                
+                HStack(spacing: 8) {
+                    ForEach(presetColors, id: \.self) { hex in
+                        Button(action: {
+                            colorHex = hex
+                            selectedColor = Color(hex: hex)
+                        }) {
+                            ZStack {
                                 Circle()
-                                    .stroke(Color.primary, lineWidth: colorHex == hex ? 2 : 0)
-                            )
-                            .onTapGesture {
-                                colorHex = hex
+                                    .fill(Color(hex: hex))
+                                    .frame(width: 24, height: 24)
+                                if colorHex.uppercased() == hex.uppercased() {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
                             }
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
             
-            VStack(alignment: .leading, spacing: 6) {
+            // Icon Picker Grid
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Icon")
                     .font(.caption)
+                    .fontWeight(.semibold)
                     .foregroundColor(.secondary)
-                HStack(spacing: 12) {
-                    ForEach(icons, id: \.self) { icon in
-                        Image(systemName: icon)
-                            .font(.system(size: 16))
-                            .frame(width: 28, height: 28)
-                            .background(iconName == icon ? Color.accentColor.opacity(0.2) : Color.clear)
-                            .cornerRadius(6)
-                            .onTapGesture {
-                                iconName = icon
+                
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 8), spacing: 8) {
+                    ForEach(presetIcons, id: \.self) { icon in
+                        Button(action: {
+                            iconName = icon
+                        }) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(iconName == icon ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .stroke(iconName == icon ? Color.accentColor : Color.clear, lineWidth: 1.5)
+                                    )
+                                Image(systemName: icon)
+                                    .font(.system(size: 14))
+                                    .foregroundColor(iconName == icon ? .accentColor : .primary)
                             }
+                            .frame(height: 32)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
             
+            Spacer()
+            
+            Divider()
+            
+            // Buttons
             HStack {
                 Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                
                 Spacer()
-                Button("Save") {
+                
+                Button("Save Category") {
+                    let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let finalName = trimmedName.isEmpty ? "New Category" : trimmedName
                     let cat = ActivityCategory(
                         id: editingId ?? UUID(),
-                        name: name.isEmpty ? "New Category" : name,
+                        name: finalName,
                         colorHex: colorHex,
                         iconName: iconName,
                         productivityScore: productivityScore
@@ -267,10 +391,11 @@ struct CategoryEditSheet: View {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
             }
         }
         .padding(24)
-        .frame(width: 440)
+        .frame(width: 460, height: 480)
     }
 }
 
@@ -282,56 +407,115 @@ struct ProjectEditSheet: View {
     @State private var colorHex: String
     @State private var categoryId: UUID?
     @State private var hourlyRateText: String
+    @State private var selectedColor: Color
+    
     let editingId: UUID?
     let categories: [ActivityCategory]
     let onSave: (Project) -> Void
     
+    let presetColors = [
+        "#0A84FF", "#BF5AF2", "#5E5CE6", "#30D158", "#FF9F0A", "#FF453A", "#64D2FF", "#FF375F", "#8E8E93"
+    ]
+    
     init(project: Project?, categories: [ActivityCategory], onSave: @escaping (Project) -> Void) {
         self.editingId = project?.id
         self.categories = categories
+        let initialHex = project?.colorHex ?? "#0A84FF"
         _name = State(initialValue: project?.name ?? "")
-        _colorHex = State(initialValue: project?.colorHex ?? "#0A84FF")
+        _colorHex = State(initialValue: initialHex)
         _categoryId = State(initialValue: project?.categoryId)
         _hourlyRateText = State(initialValue: project?.hourlyRate.map { String($0) } ?? "")
+        _selectedColor = State(initialValue: Color(hex: initialHex))
         self.onSave = onSave
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 18) {
             Text(editingId == nil ? "New Project" : "Edit Project")
-                .font(.headline)
+                .font(.title3)
+                .fontWeight(.bold)
             
-            TextField("Project Name", text: $name)
-                .textFieldStyle(.roundedBorder)
+            Divider()
             
             VStack(alignment: .leading, spacing: 6) {
-                Text("Category")
+                Text("Project Name")
                     .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                TextField("e.g. Website Redesign", text: $name)
+                    .textFieldStyle(.roundedBorder)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Associated Category")
+                    .font(.caption)
+                    .fontWeight(.semibold)
                     .foregroundColor(.secondary)
                 Picker("", selection: $categoryId) {
                     Text("None").tag(nil as UUID?)
                     ForEach(categories) { cat in
-                        Text(cat.name).tag(cat.id as UUID?)
+                        HStack {
+                            Circle().fill(Color(hex: cat.colorHex)).frame(width: 8, height: 8)
+                            Text(cat.name)
+                        }.tag(cat.id as UUID?)
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Hourly Rate ($ / hour)")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                TextField("e.g. 80.00", text: $hourlyRateText)
+                    .textFieldStyle(.roundedBorder)
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Color")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                HStack(spacing: 8) {
+                    ForEach(presetColors, id: \.self) { hex in
+                        Button(action: {
+                            colorHex = hex
+                            selectedColor = Color(hex: hex)
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color(hex: hex))
+                                    .frame(width: 24, height: 24)
+                                if colorHex.uppercased() == hex.uppercased() {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
             
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Hourly Rate ($)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                TextField("Optional (e.g. 75)", text: $hourlyRateText)
-                    .textFieldStyle(.roundedBorder)
-            }
+            Spacer()
+            
+            Divider()
             
             HStack {
                 Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                
                 Spacer()
-                Button("Save") {
+                
+                Button("Save Project") {
                     let rate = Double(hourlyRateText)
+                    let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let finalName = trimmedName.isEmpty ? "New Project" : trimmedName
                     let proj = Project(
                         id: editingId ?? UUID(),
-                        name: name.isEmpty ? "New Project" : name,
+                        name: finalName,
                         categoryId: categoryId,
                         colorHex: colorHex,
                         hourlyRate: rate
@@ -340,9 +524,10 @@ struct ProjectEditSheet: View {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
             }
         }
         .padding(24)
-        .frame(width: 400)
+        .frame(width: 440, height: 400)
     }
 }

@@ -1,9 +1,20 @@
 import SwiftUI
 
+public enum RuleSheet: Identifiable {
+    case addRule
+    case editRule(TrackingRule)
+    
+    public var id: String {
+        switch self {
+        case .addRule: return "add_rule"
+        case .editRule(let r): return "edit_rule_\(r.id)"
+        }
+    }
+}
+
 public struct RulesView: View {
     @ObservedObject var appState: AppState
-    @State private var showingAddRuleSheet = false
-    @State private var ruleToEdit: TrackingRule?
+    @State private var activeSheet: RuleSheet?
     @State private var showAppliedAlert = false
     
     private var categoryMap: [UUID: ActivityCategory] {
@@ -32,7 +43,7 @@ public struct RulesView: View {
                 }
                 .buttonStyle(.bordered)
                 
-                Button(action: { showingAddRuleSheet = true }) {
+                Button(action: { activeSheet = .addRule }) {
                     Label("Add Rule", systemImage: "plus")
                 }
                 .buttonStyle(.borderedProminent)
@@ -55,7 +66,7 @@ public struct RulesView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     Button("Add Rule") {
-                        showingAddRuleSheet = true
+                        activeSheet = .addRule
                     }
                     .buttonStyle(.borderedProminent)
                     Spacer()
@@ -119,7 +130,7 @@ public struct RulesView: View {
                             }
                             
                             Button("Edit") {
-                                ruleToEdit = rule
+                                activeSheet = .editRule(rule)
                             }
                             .buttonStyle(.bordered)
                             
@@ -141,14 +152,16 @@ public struct RulesView: View {
         } message: {
             Text("All historical activities have been re-evaluated and categorized according to your current active rules.")
         }
-        .sheet(isPresented: $showingAddRuleSheet) {
-            RuleEditSheet(rule: nil, categories: appState.categories, projects: appState.projects) { newRule in
-                appState.saveRule(newRule)
-            }
-        }
-        .sheet(item: $ruleToEdit) { rule in
-            RuleEditSheet(rule: rule, categories: appState.categories, projects: appState.projects) { updatedRule in
-                appState.saveRule(updatedRule)
+        .sheet(item: $activeSheet) { sheet in
+            switch sheet {
+            case .addRule:
+                RuleEditSheet(rule: nil, categories: appState.categories, projects: appState.projects) { newRule in
+                    appState.saveRule(newRule)
+                }
+            case .editRule(let r):
+                RuleEditSheet(rule: r, categories: appState.categories, projects: appState.projects) { updatedRule in
+                    appState.saveRule(updatedRule)
+                }
             }
         }
     }
@@ -190,38 +203,52 @@ struct RuleEditSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(editingId == nil ? "New Categorization Rule" : "Edit Rule")
-                .font(.headline)
+                .font(.title3)
+                .fontWeight(.bold)
             
-            TextField("Rule Name (e.g. VS Code -> Dev)", text: $name)
-                .textFieldStyle(.roundedBorder)
+            Divider()
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Rule Name")
+                    .font(.caption)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.secondary)
+                TextField("e.g. VS Code -> Development", text: $name)
+                    .textFieldStyle(.roundedBorder)
+            }
             
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Target Field")
                         .font(.caption)
+                        .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     Picker("", selection: $targetField) {
                         ForEach(RuleField.allCases, id: \.self) { field in
                             Text(field.rawValue).tag(field)
                         }
                     }
+                    .pickerStyle(.menu)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Match Condition")
                         .font(.caption)
+                        .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     Picker("", selection: $matchType) {
                         ForEach(RuleMatchType.allCases, id: \.self) { match in
                             Text(match.rawValue).tag(match)
                         }
                     }
+                    .pickerStyle(.menu)
                 }
             }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text("Pattern Value")
                     .font(.caption)
+                    .fontWeight(.semibold)
                     .foregroundColor(.secondary)
                 TextField("e.g. Xcode, github.com, or regex", text: $pattern)
                     .textFieldStyle(.roundedBorder)
@@ -231,6 +258,7 @@ struct RuleEditSheet: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Assign Category")
                         .font(.caption)
+                        .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     Picker("", selection: $targetCategoryId) {
                         Text("None").tag(nil as UUID?)
@@ -238,11 +266,13 @@ struct RuleEditSheet: View {
                             Text(cat.name).tag(cat.id as UUID?)
                         }
                     }
+                    .pickerStyle(.menu)
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Assign Project")
                         .font(.caption)
+                        .fontWeight(.semibold)
                         .foregroundColor(.secondary)
                     Picker("", selection: $targetProjectId) {
                         Text("None").tag(nil as UUID?)
@@ -250,26 +280,38 @@ struct RuleEditSheet: View {
                             Text(proj.name).tag(proj.id as UUID?)
                         }
                     }
+                    .pickerStyle(.menu)
                 }
             }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text("Priority (Higher evaluated first)")
                     .font(.caption)
+                    .fontWeight(.semibold)
                     .foregroundColor(.secondary)
                 Stepper("Priority: \(priority)", value: $priority, in: 0...100)
             }
             
+            Spacer()
+            
+            Divider()
+            
             HStack {
                 Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                
                 Spacer()
+                
                 Button("Save Rule") {
+                    let trimmedPattern = pattern.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let finalName = trimmedName.isEmpty ? "Rule for \(trimmedPattern)" : trimmedName
                     let r = TrackingRule(
                         id: editingId ?? UUID(),
-                        name: name.isEmpty ? "Rule for \(pattern)" : name,
+                        name: finalName,
                         targetField: targetField,
                         matchType: matchType,
-                        pattern: pattern,
+                        pattern: trimmedPattern,
                         targetCategoryId: targetCategoryId,
                         targetProjectId: targetProjectId,
                         priority: priority,
@@ -279,10 +321,11 @@ struct RuleEditSheet: View {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
                 .disabled(pattern.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
         .padding(24)
-        .frame(width: 480)
+        .frame(width: 480, height: 460)
     }
 }
